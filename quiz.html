@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>{{ quiz.title }} Quiz — ProctorQuiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#07090d;--bg2:#0d1018;--bg3:#121720;--border:#1a2030;--border2:#232c3a;
+      --text:#c8d4e8;--text2:#6b7a94;--text3:#2e3a4a;
+      --green:#00e5a0;--green-dim:#00e5a018;--red:#ff3b5c;--red-dim:#ff3b5c20;
+      --yellow:#ffd447;--yellow-dim:#ffd44720;--orange:#ff7a2f;--purple:#b06dff;
+      --font-mono:'Space Mono',monospace;--font-sans:'Syne',sans-serif;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font-mono);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+    body.blur-bg::after{content:'';position:fixed;inset:0;z-index:50;background:rgba(7,9,13,.92);
+      backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;}
+
+    /* HEADER */
+    .qheader{display:flex;align-items:center;justify-content:space-between;
+      padding:12px 24px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;}
+    .qh-left{display:flex;align-items:center;gap:12px;}
+    .qh-logo{font-family:var(--font-sans);font-weight:800;font-size:16px;}
+    .qh-logo span{color:var(--green);}
+    .qh-sep{color:var(--border2);}
+    .qh-subject{font-size:12px;color:var(--text2);}
+    .qh-center{display:flex;align-items:center;gap:16px;}
+    .qh-timer{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;
+      color:var(--green);letter-spacing:.05em;transition:color .3s;}
+    .qh-timer.warn{color:var(--yellow);animation:timerPulse 1s infinite;}
+    .qh-timer.danger{color:var(--red);animation:timerPulse .5s infinite;}
+    @keyframes timerPulse{0%,100%{opacity:1}50%{opacity:.5}}
+    .qh-progress-wrap{display:flex;align-items:center;gap:10px;}
+    .qh-prog-track{width:140px;height:4px;background:var(--border2);border-radius:2px;overflow:hidden;}
+    .qh-prog-fill{height:100%;background:var(--green);border-radius:2px;transition:width .3s;}
+    .qh-prog-txt{font-size:11px;color:var(--text2);}
+    .qh-right{display:flex;align-items:center;gap:12px;}
+    .qh-sid{font-size:10px;color:var(--text3);letter-spacing:.1em;}
+    .proctor-mini{display:flex;align-items:center;gap:6px;background:var(--bg3);
+      border:1px solid var(--border2);border-radius:4px;padding:5px 10px;font-size:10px;}
+    .pm-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);transition:all .3s;}
+    .pm-dot.active{background:var(--green);box-shadow:0 0 6px var(--green);animation:pdot 1.5s infinite;}
+    .pm-dot.alert{background:var(--red);box-shadow:0 0 6px var(--red);animation:pdot .5s infinite;}
+    @keyframes pdot{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* ALERT BAR */
+    .alert-bar{display:none;align-items:center;gap:10px;padding:8px 24px;
+      background:var(--red-dim);border-bottom:2px solid var(--red);position:sticky;top:52px;z-index:19;}
+    .alert-bar.show{display:flex;}
+    .alert-bar.warn{background:var(--yellow-dim);border-bottom-color:var(--yellow);}
+    .ab-text{flex:1;font-size:12px;font-weight:700;}
+    .ab-text.red{color:var(--red);}
+    .ab-text.yellow{color:var(--yellow);}
+    .ab-dismiss{background:none;border:1px solid currentColor;color:inherit;
+      cursor:pointer;width:20px;height:20px;border-radius:3px;font-size:10px;transition:all .2s;}
+
+    /* LAYOUT */
+    .quiz-layout{display:grid;grid-template-columns:1fr 300px;gap:0;min-height:calc(100vh - 52px);}
+
+    /* QUIZ AREA */
+    .quiz-area{padding:28px;overflow-y:auto;}
+    .q-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;}
+    .q-nav-btn{width:34px;height:34px;border-radius:6px;border:1.5px solid var(--border2);
+      background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;
+      font-family:var(--font-mono);transition:all .2s;display:flex;align-items:center;justify-content:center;}
+    .q-nav-btn:hover{border-color:var(--green);color:var(--green);}
+    .q-nav-btn.current{border-color:var(--blue);background:var(--blue-dim,#4d9fff15);color:var(--blue);}
+    .q-nav-btn.answered{border-color:var(--green);background:var(--green-dim);color:var(--green);}
+
+    .question-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:28px;margin-bottom:16px;}
+    .q-number{font-size:10px;letter-spacing:.2em;color:var(--text2);margin-bottom:12px;}
+    .q-text{font-family:var(--font-sans);font-size:18px;font-weight:600;line-height:1.5;margin-bottom:24px;}
+    .options{display:flex;flex-direction:column;gap:10px;}
+    .option{display:flex;align-items:center;gap:14px;background:var(--bg3);
+      border:1.5px solid var(--border2);border-radius:8px;padding:14px 16px;
+      cursor:pointer;transition:all .2s;user-select:none;}
+    .option:hover{border-color:var(--blue);background:#4d9fff0a;}
+    .option.selected{border-color:var(--green);background:var(--green-dim);}
+    .opt-letter{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);
+      display:flex;align-items:center;justify-content:center;font-size:12px;
+      font-weight:700;flex-shrink:0;transition:all .2s;}
+    .option.selected .opt-letter{border-color:var(--green);background:var(--green);color:#000;}
+    .opt-text{font-size:13px;line-height:1.5;}
+
+    .q-actions{display:flex;gap:10px;justify-content:space-between;align-items:center;}
+    .q-btn{font-family:var(--font-mono);font-size:11px;padding:10px 20px;border-radius:6px;
+      cursor:pointer;letter-spacing:.1em;transition:all .2s;border:1px solid var(--border2);
+      background:var(--bg3);color:var(--text);}
+    .q-btn:hover{border-color:var(--green);color:var(--green);}
+    .q-btn.primary{background:var(--green);color:#000;border-color:var(--green);font-weight:700;}
+    .q-btn.primary:hover{background:#00c988;}
+    .q-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .q-btn.submit-btn{background:var(--yellow);color:#000;border-color:var(--yellow);font-weight:700;}
+    .q-btn.submit-btn:hover{background:#ffc000;}
+
+    /* PROCTOR SIDEBAR */
+    .proctor-sidebar{border-left:1px solid var(--border);background:var(--bg2);
+      display:flex;flex-direction:column;position:sticky;top:52px;height:calc(100vh - 52px);overflow:hidden;}
+    .ps-header{padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .ps-title{font-size:10px;letter-spacing:.2em;color:var(--text2);}
+    .ps-cam{flex:0 0 168px;background:#000;position:relative;overflow:hidden;}
+    .ps-cam video{width:100%;height:100%;object-fit:cover;display:block;}
+    .ps-cam img#procFeed{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+    .ps-cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      flex-direction:column;gap:8px;font-size:11px;color:var(--text2);background:var(--bg3);}
+    .ps-cam-overlay.hidden{display:none;}
+    .ps-rec{position:absolute;top:8px;left:8px;display:none;align-items:center;gap:5px;
+      background:rgba(0,0,0,.7);border-radius:3px;padding:3px 7px;font-size:9px;}
+    .rec-dot{width:5px;height:5px;background:var(--red);border-radius:50%;animation:pdot 1s infinite;}
+    .ps-score{padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .ps-score-row{display:flex;align-items:center;gap:10px;}
+    .ps-score-arc{font-size:24px;font-weight:700;font-family:var(--font-sans);}
+    .ps-score-label{font-size:9px;color:var(--text3);letter-spacing:.1em;margin-top:2px;}
+    .ps-score-right{flex:1;}
+    .ps-score-bar-track{height:5px;background:var(--border2);border-radius:3px;overflow:hidden;margin-bottom:4px;}
+    .ps-score-bar-fill{height:100%;background:var(--green);border-radius:3px;transition:width .5s,background .3s;width:0%;}
+    .ps-score-grade{font-size:10px;color:var(--text2);}
+    .ps-flags{padding:10px 16px;flex-shrink:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;border-bottom:1px solid var(--border);}
+
+    /* Screen recording lock overlay */
+    .screen-lock-overlay{position:fixed;inset:0;z-index:9999;background:rgba(7,9,13,.97);
+      display:none;flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;gap:16px;}
+    .screen-lock-overlay.show{display:flex;}
+    .slo-icon{font-size:64px;animation:shake .5s ease-in-out infinite;}
+    .slo-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#ff3b5c;}
+    .slo-sub{font-size:14px;color:#6b7a94;max-width:400px;line-height:1.7;}
+    .slo-countdown{font-size:48px;font-weight:800;color:#ff3b5c;font-variant-numeric:tabular-nums;}
+    .slo-badge{background:#ff3b5c22;border:1px solid #ff3b5c;border-radius:6px;
+      padding:10px 20px;font-size:12px;color:#ff3b5c;letter-spacing:.1em;margin-top:8px;}
+
+    /* ID verification badge on video */
+    .id-verify-badge{position:absolute;top:10px;right:10px;display:none;
+      background:rgba(0,0,0,.8);border-radius:4px;padding:4px 9px;font-size:10px;
+      display:flex;align-items:center;gap:5px;border:1px solid var(--green);}
+    .id-verify-badge.mismatch{border-color:var(--red);}
+    .ivb-dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+    .id-verify-badge.mismatch .ivb-dot{background:var(--red);}
+    .ps-flag{background:var(--bg3);border:1px solid var(--border);border-radius:5px;
+      padding:7px 9px;text-align:center;transition:all .3s;}
+    .ps-flag.alert{border-color:var(--red);background:var(--red-dim);}
+    .pf-icon{font-size:14px;}
+    .pf-val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;font-family:var(--font-sans);}
+    .pf-lbl{font-size:8px;color:var(--text3);letter-spacing:.1em;}
+    .ps-log{flex:1;overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+    .ps-log-entry{font-size:10px;display:flex;gap:6px;padding:5px 6px;border-radius:4px;margin-bottom:3px;border-left:2px solid transparent;}
+    .ps-log-entry.critical{background:var(--red-dim);border-left-color:var(--red);}
+    .ps-log-entry.warning{background:var(--yellow-dim);border-left-color:var(--yellow);}
+    .ple-time{color:var(--text3);min-width:44px;flex-shrink:0;}
+    .ple-msg{color:var(--text2);line-height:1.4;}
+    .ps-log-empty{padding:16px;font-size:11px;color:var(--text3);text-align:center;}
+
+    /* SUBMIT CONFIRM MODAL */
+    .modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(7,9,13,.85);
+      backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;}
+    .modal-overlay.show{display:flex;}
+    .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;
+      padding:36px;max-width:420px;width:90%;text-align:center;}
+    .modal h3{font-family:var(--font-sans);font-size:22px;font-weight:800;margin-bottom:12px;}
+    .modal p{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;}
+    .modal-btns{display:flex;gap:12px;justify-content:center;}
+    .modal-btn{font-family:var(--font-mono);font-size:12px;padding:12px 24px;border-radius:6px;
+      cursor:pointer;letter-spacing:.1em;transition:all .2s;border:1px solid var(--border2);}
+    .modal-btn.confirm{background:var(--yellow);color:#000;border-color:var(--yellow);font-weight:700;}
+    .modal-btn.cancel{background:var(--bg3);color:var(--text);}
+
+    @media(max-width:900px){
+      .quiz-layout{grid-template-columns:1fr;}
+      .proctor-sidebar{position:fixed;bottom:0;left:0;right:0;height:auto;
+        top:auto;border-left:none;border-top:1px solid var(--border);z-index:18;}
+      .quiz-area{padding-bottom:200px;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="qheader">
+  <div class="qh-left">
+    <div class="qh-logo">Proctor<span>Quiz</span></div>
+    <span class="qh-sep">|</span>
+    <span class="qh-subject">{{ quiz.icon }} {{ quiz.title }}</span>
+  </div>
+  <div class="qh-center">
+    <div class="qh-timer" id="timerDisplay">{{ quiz.duration }}:00</div>
+    <div class="qh-progress-wrap">
+      <div class="qh-prog-track"><div class="qh-prog-fill" id="progFill" style="width:0%"></div></div>
+      <span class="qh-prog-txt" id="progTxt">0/{{ quiz.questions|length }}</span>
+    </div>
+  </div>
+  <div class="qh-right">
+    <span class="qh-sid">ID: {{ sid }}</span>
+    <div class="proctor-mini">
+      <span class="pm-dot" id="pmDot"></span>
+      <span id="pmText">STARTING</span>
+    </div>
+  </div>
+</header>
+
+<!-- ALERT BAR -->
+<div class="alert-bar" id="alertBar">
+  <span>⚠</span>
+  <span class="ab-text" id="alertBarText"></span>
+  <button class="ab-dismiss" onclick="document.getElementById('alertBar').classList.remove('show')">✕</button>
+</div>
+
+<!-- LAYOUT -->
+<div class="quiz-layout">
+
+  <!-- QUIZ AREA -->
+  <div class="quiz-area">
+    <!-- Question navigator -->
+    <div class="q-nav" id="qNav"></div>
+
+    <!-- Question card -->
+    <div class="question-card" id="qCard">
+      <div class="q-number" id="qNum">QUESTION 1 OF {{ quiz.questions|length }}</div>
+      <div class="q-text" id="qText"></div>
+      <div class="options" id="optionsBox"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="q-actions">
+      <button class="q-btn" id="prevBtn" onclick="navigate(-1)" disabled>← PREV</button>
+      <span style="font-size:11px;color:var(--text3)" id="answeredCount">0 answered</span>
+      <button class="q-btn primary" id="nextBtn" onclick="navigate(1)">NEXT →</button>
+    </div>
+    <div style="margin-top:12px;text-align:right;">
+      <button class="q-btn submit-btn" onclick="confirmSubmit()">SUBMIT QUIZ ✓</button>
+    </div>
+  </div>
+
+  <!-- PROCTOR SIDEBAR -->
+  <aside class="proctor-sidebar">
+    <div class="ps-header">
+      <div class="ps-title">🛡️ PROCTOR MONITOR</div>
+    </div>
+    <!-- Camera -->
+    <div class="ps-cam">
+      <video id="psVideo" autoplay muted playsinline></video>
+      <img id="procFeed" alt=""/>
+      <div class="ps-cam-overlay" id="psCamOverlay">
+        <span style="font-size:24px;opacity:.4">📷</span>
+        <span>Camera loading…</span>
+      </div>
+      <div class="ps-rec" id="psRec"><span class="rec-dot"></span>LIVE</div>
+      <!-- ID Verification live badge -->
+      <div class="id-verify-badge" id="idVerifyBadge" style="display:none;">
+        <span class="ivb-dot"></span>
+        <span id="idVerifyText">ID: --</span>
+      </div>
+    </div>
+
+<!-- Screen Recording Lock Overlay -->
+<div class="screen-lock-overlay" id="screenLockOverlay">
+  <div class="slo-icon">🚫</div>
+  <div class="slo-title">SCREEN RECORDING DETECTED</div>
+  <div class="slo-sub">Screen sharing or recording has been detected. This is a violation of exam rules. Your session has been flagged.</div>
+  <div class="slo-countdown" id="sloCountdown">5</div>
+  <div class="slo-badge">⚠️ VIOLATION LOGGED — Returning to exam in <span id="sloCdText">5</span> seconds</div>
+</div>
+    <!-- Risk score -->
+    <div class="ps-score">
+      <div class="ps-score-row">
+        <div>
+          <div class="ps-score-arc" id="psScoreNum" style="color:var(--green)">0</div>
+          <div class="ps-score-label">RISK SCORE</div>
+        </div>
+        <div class="ps-score-right">
+          <div class="ps-score-bar-track"><div class="ps-score-bar-fill" id="psScoreBar"></div></div>
+          <div class="ps-score-grade" id="psGrade">✓ CLEAN</div>
+        </div>
+      </div>
+    </div>
+    <!-- Flags grid -->
+    <div class="ps-flags">
+      <div class="ps-flag" id="pfFace">
+        <div class="pf-icon">👤</div>
+        <div class="pf-val" id="pfFaceVal">--</div>
+        <div class="pf-lbl">FACES</div>
+      </div>
+      <div class="ps-flag" id="pfPhone">
+        <div class="pf-icon">📱</div>
+        <div class="pf-val" id="pfPhoneVal">0</div>
+        <div class="pf-lbl">PHONE</div>
+      </div>
+      <div class="ps-flag" id="pfID">
+        <div class="pf-icon">🪪</div>
+        <div class="pf-val" id="pfIDVal">--</div>
+        <div class="pf-lbl">ID MATCH</div>
+      </div>
+      <div class="ps-flag" id="pfScreen">
+        <div class="pf-icon">🖥️</div>
+        <div class="pf-val" id="pfScreenVal">0</div>
+        <div class="pf-lbl">SCREEN REC</div>
+      </div>
+      <div class="ps-flag" id="pfCP">
+        <div class="pf-icon">📋</div>
+        <div class="pf-val" id="pfCPVal">0</div>
+        <div class="pf-lbl">COPY-PASTE</div>
+      </div>
+      <div class="ps-flag" id="pfTab">
+        <div class="pf-icon">🔀</div>
+        <div class="pf-val" id="pfTabVal">0</div>
+        <div class="pf-lbl">TAB SWITCH</div>
+      </div>
+    </div>
+    <!-- Mini violation log -->
+    <div class="ps-log" id="psLog">
+      <div class="ps-log-empty">No violations yet ✓</div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- SUBMIT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>Submit Quiz?</h3>
+    <p id="modalBody">You have answered <strong id="modalAnswered">0</strong> of <strong>{{ quiz.questions|length }}</strong> questions.<br>Submitting will end your proctored session.</p>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="document.getElementById('modalOverlay').classList.remove('show')">CANCEL</button>
+      <button class="modal-btn confirm" onclick="submitQuiz()">SUBMIT ✓</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Quiz data injected from server ──
+const QUESTIONS = {{ quiz.questions | tojson }};
+const SESSION_ID = "{{ sid }}";
+const CANDIDATE  = "{{ session.name }}";
+const DURATION_MIN = {{ quiz.duration }};
+
+// ── State ──
+let currentQ    = 0;
+const answers   = {};
+let timerSecs   = DURATION_MIN * 60;
+let timerInterval, frameInterval, statsInterval, fpsFrames=0, fpsTimer;
+let mediaStream = null;
+let copyCount=0, pasteCount=0, cutCount=0;
+let lastTabSwitch=0, lastCPEvent={};
+const _canvas = document.createElement('canvas');
+const _ctx    = _canvas.getContext('2d');
+
+// ── Init ──
+window.addEventListener('DOMContentLoaded', () => {
+  buildNav();
+  renderQuestion(0);
+  startTimer();
+  startCamera();
+  setupTabDetection();
+  setupCopyPaste();
+  setupScreenRecordingLock();
+  setInterval(fetchViolations, 3000);
+});
+
+// ── Question Nav ──
+function buildNav() {
+  const nav = document.getElementById('qNav');
+  QUESTIONS.forEach((q,i) => {
+    const b = document.createElement('button');
+    b.className = 'q-nav-btn' + (i===0?' current':'');
+    b.textContent = i+1;
+    b.onclick = () => renderQuestion(i);
+    b.id = `qnb${i}`;
+    nav.appendChild(b);
+  });
+}
+
+function renderQuestion(idx) {
+  currentQ = idx;
+  const q  = QUESTIONS[idx];
+  document.getElementById('qNum').textContent   = `QUESTION ${idx+1} OF ${QUESTIONS.length}`;
+  document.getElementById('qText').textContent  = q.q;
+  document.getElementById('prevBtn').disabled   = idx === 0;
+  document.getElementById('nextBtn').disabled   = idx === QUESTIONS.length - 1;
+  document.getElementById('progFill').style.width = ((idx+1)/QUESTIONS.length*100)+'%';
+  document.getElementById('progTxt').textContent   = `${idx+1}/${QUESTIONS.length}`;
+
+  // Update nav buttons
+  document.querySelectorAll('.q-nav-btn').forEach((b,i) => {
+    b.className = 'q-nav-btn' + (answers[i+1]!==undefined?' answered':'') + (i===idx?' current':'');
+  });
+
+  // Render options
+  const opts = document.getElementById('optionsBox');
+  opts.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.options.forEach((opt,i) => {
+    const div = document.createElement('div');
+    div.className = 'option' + (answers[q.id]===i?' selected':'');
+    div.innerHTML = `<div class="opt-letter">${letters[i]}</div><div class="opt-text">${opt}</div>`;
+    div.onclick = () => selectOption(q.id, i, div);
+    opts.appendChild(div);
+  });
+  updateAnsweredCount();
+}
+
+function selectOption(qid, idx, el) {
+  answers[qid] = idx;
+  document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  // Update nav button
+  const navBtn = document.getElementById(`qnb${currentQ}`);
+  if (navBtn) navBtn.className = 'q-nav-btn answered current';
+  updateAnsweredCount();
+}
+
+function navigate(dir) {
+  const next = currentQ + dir;
+  if (next >= 0 && next < QUESTIONS.length) renderQuestion(next);
+}
+
+function updateAnsweredCount() {
+  const count = Object.keys(answers).length;
+  document.getElementById('answeredCount').textContent = `${count} answered`;
+  document.getElementById('modalAnswered').textContent = count;
+}
+
+// ── Timer ──
+function startTimer() {
+  timerInterval = setInterval(() => {
+    timerSecs--;
+    const m = Math.floor(timerSecs/60);
+    const s = timerSecs % 60;
+    const el = document.getElementById('timerDisplay');
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if (timerSecs <= 120) el.className = 'qh-timer warn';
+    if (timerSecs <= 30)  el.className = 'qh-timer danger';
+    if (timerSecs <= 0)   { clearInterval(timerInterval); submitQuiz(); }
+  }, 1000);
+}
+
+// ── Camera & Proctoring ──
+async function startCamera() {
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video:{width:{ideal:640},height:{ideal:480},facingMode:'user'}, audio:true
+    });
+  } catch(e) {
+    try { mediaStream = await navigator.mediaDevices.getUserMedia({video:true,audio:false}); }
+    catch(e2) { return; }
+  }
+
+  const vid = document.getElementById('psVideo');
+  vid.srcObject = mediaStream;
+  document.getElementById('psCamOverlay').classList.add('hidden');
+  document.getElementById('procFeed').style.display = 'block';
+  document.getElementById('psRec').style.display     = 'flex';
+  setPmStatus('MONITORING', true);
+
+  fpsTimer       = setInterval(() => { fpsFrames=0; }, 1000);
+  frameInterval  = setInterval(captureFrame, 500);
+}
+
+async function captureFrame() {
+  const vid = document.getElementById('psVideo');
+  if (!vid.videoWidth) return;
+  _canvas.width  = vid.videoWidth;
+  _canvas.height = vid.videoHeight;
+  _ctx.drawImage(vid, 0, 0);
+  fpsFrames++;
+  try {
+    const res  = await fetch('/api/analyze',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({frame:_canvas.toDataURL('image/jpeg',.75)})
+    });
+    const data = await res.json();
+    if (data.error) return;
+    if (data.processed_frame) document.getElementById('procFeed').src = data.processed_frame;
+    if (data.alert) showQuizAlert(data.alert, data.severity);
+    if (data.stats) updateProcStats(data.stats);
+  } catch(e) {}
+}
+
+async function fetchViolations() {
+  try {
+    const res  = await fetch('/api/stats');
+    const data = await res.json();
+    if (data.violations) updatePsLog(data.violations.slice(0,8));
+    if (data.stats)      updateProcStats(data.stats);
+  } catch(e) {}
+}
+
+function updateProcStats(s) {
+  const score = Math.min(s.violation_score||0,100);
+  document.getElementById('psScoreNum').textContent = score;
+  document.getElementById('psScoreBar').style.width = score+'%';
+  const color = score<20?'var(--green)':score<40?'var(--yellow)':score<70?'var(--orange)':'var(--red)';
+  document.getElementById('psScoreBar').style.background = color;
+  document.getElementById('psScoreNum').style.color      = color;
+  document.getElementById('psGrade').textContent = score<20?'✓ CLEAN':score<40?'⚠ CAUTION':score<70?'HIGH RISK':'CRITICAL';
+  document.getElementById('pfFaceVal').textContent  = s.last_face_count ?? '--';
+  document.getElementById('pfPhoneVal').textContent = s.phone_count||0;
+  document.getElementById('pfCPVal').textContent    = s.copy_paste_count||0;
+  document.getElementById('pfTabVal').textContent   = s.tab_switch_count||0;
+  document.getElementById('pfScreenVal').textContent= s.screen_record_count||0;
+
+  // ID verification badge
+  const idBadge = document.getElementById('idVerifyBadge');
+  const idText  = document.getElementById('idVerifyText');
+  if (s.face_recognition_available) {
+    idBadge.style.display = 'flex';
+    if (s.face_verified) {
+      idBadge.className = 'id-verify-badge';
+      idText.textContent = `✓ ID ${s.identity_score}%`;
+      document.getElementById('pfIDVal').textContent = '✓';
+    } else if (s.face_mismatch_count > 0) {
+      idBadge.className = 'id-verify-badge mismatch';
+      idText.textContent = `✗ MISMATCH`;
+      document.getElementById('pfIDVal').textContent = '✗';
+    } else {
+      idText.textContent = 'VERIFYING';
+      document.getElementById('pfIDVal').textContent = '…';
+    }
+  } else {
+    document.getElementById('pfIDVal').textContent = 'N/A';
+  }
+
+  toggleFlag('pfFace',   (s.last_face_count===0||s.last_face_count>1));
+  toggleFlag('pfPhone',  s.phone_count>0);
+  toggleFlag('pfCP',     s.copy_paste_count>0);
+  toggleFlag('pfTab',    s.tab_switch_count>0);
+  toggleFlag('pfScreen', s.screen_record_count>0);
+  toggleFlag('pfID',     s.face_mismatch_count>0);
+}
+
+function toggleFlag(id, alert) {
+  document.getElementById(id).classList.toggle('alert', alert);
+}
+
+function updatePsLog(violations) {
+  const log = document.getElementById('psLog');
+  if (!violations.length) return;
+  const ICONS = {NO_FACE:'🙈',MULTIPLE_FACES:'👥',TAB_SWITCH:'🔀',PHONE_DETECTED:'📱',COPY_PASTE:'📋',AUDIO_MULTIPLE_VOICES:'🎙️',AUDIO_LOUD:'🔊'};
+  log.innerHTML = violations.map(v=>`
+    <div class="ps-log-entry ${v.severity}">
+      <span class="ple-time">${v.timestamp}</span>
+      <span class="ple-msg">${ICONS[v.type]||'⚠'} ${v.message}</span>
+    </div>`).join('');
+}
+
+// ── Tab & Copy-Paste ──
+function setupTabDetection() {
+  document.addEventListener('visibilitychange', () => { if(document.hidden) logTabSwitch(); });
+  window.addEventListener('blur', logTabSwitch);
+}
+function logTabSwitch() {
+  const now = Date.now();
+  if (now-lastTabSwitch < 3000) return;
+  lastTabSwitch = now;
+  fetch('/api/tab_switch',{method:'POST',headers:{'Content-Type':'application/json'}});
+  showQuizAlert('🔀 Tab switch detected!','warning');
+}
+
+// ── Screen Recording Lock ──────────────────────────────────────────────────
+function setupScreenRecordingLock() {
+  // 1. Intercept getDisplayMedia (screen share / recording)
+  const origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia?.bind(navigator.mediaDevices);
+  if (origGetDisplayMedia) {
+    navigator.mediaDevices.getDisplayMedia = async function(constraints) {
+      triggerScreenLock('screen_share');
+      throw new DOMException('Screen recording is not allowed during exam.', 'NotAllowedError');
+    };
+  }
+
+  // 2. PrintScreen key detection
+  document.addEventListener('keyup', e => {
+    if (e.key === 'PrintScreen' || e.keyCode === 44) {
+      triggerScreenLock('print_screen');
+    }
+    // Block F12 / DevTools shortcuts
+    if (e.key === 'F12') { e.preventDefault(); triggerScreenLock('devtools_open'); }
+  });
+
+  document.addEventListener('keydown', e => {
+    // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+U — DevTools / View Source
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','I','j','J','c','C'].includes(e.key)) {
+      e.preventDefault(); triggerScreenLock('devtools_open');
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') {
+      e.preventDefault(); triggerScreenLock('devtools_open');
+    }
+    // F12
+    if (e.key === 'F12') { e.preventDefault(); triggerScreenLock('devtools_open'); }
+  });
+
+  // 3. Right-click disable
+  document.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    logScreenEvent('context_menu');
+  });
+
+  // 4. DevTools size detection (heuristic)
+  let devtoolsOpen = false;
+  setInterval(() => {
+    const threshold = 160;
+    const widthDiff  = window.outerWidth  - window.innerWidth;
+    const heightDiff = window.outerHeight - window.innerHeight;
+    if ((widthDiff > threshold || heightDiff > threshold) && !devtoolsOpen) {
+      devtoolsOpen = true;
+      triggerScreenLock('devtools_open');
+    } else if (widthDiff <= threshold && heightDiff <= threshold) {
+      devtoolsOpen = false;
+    }
+  }, 1500);
+}
+
+let screenLockActive = false;
+function triggerScreenLock(eventType) {
+  if (screenLockActive) return;
+  screenLockActive = true;
+  logScreenEvent(eventType);
+  showQuizAlert(
+    eventType === 'devtools_open' ? '🛑 DevTools detected — violation logged!' :
+    eventType === 'print_screen'  ? '📸 Print Screen detected — violation logged!' :
+    '🖥️ Screen recording detected — BLOCKED!', 'critical');
+
+  // Show full screen lock overlay
+  const overlay = document.getElementById('screenLockOverlay');
+  overlay.classList.add('show');
+  let cd = 5;
+  document.getElementById('sloCountdown').textContent = cd;
+  document.getElementById('sloCdText').textContent    = cd;
+  const timer = setInterval(() => {
+    cd--;
+    document.getElementById('sloCountdown').textContent = cd;
+    document.getElementById('sloCdText').textContent    = cd;
+    if (cd <= 0) {
+      clearInterval(timer);
+      overlay.classList.remove('show');
+      screenLockActive = false;
+    }
+  }, 1000);
+}
+
+function logScreenEvent(eventType) {
+  fetch('/api/screen_record', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({event: eventType})
+  }).catch(()=>{});
+}
+
+function setupCopyPaste() {
+  document.addEventListener('copy',  e=>handleCP('copy',e));
+  document.addEventListener('paste', e=>handleCP('paste',e));
+  document.addEventListener('cut',   e=>handleCP('cut',e));
+  document.addEventListener('keydown', e=>{
+    if(e.ctrlKey||e.metaKey){
+      const k=e.key.toLowerCase();
+      if(k==='c')handleCP('copy',e);
+      if(k==='v')handleCP('paste',e);
+      if(k==='x')handleCP('cut',e);
+    }
+  });
+}
+function handleCP(type, e) {
+  const now=Date.now();
+  if(lastCPEvent[type]&&now-lastCPEvent[type]<800)return;
+  lastCPEvent[type]=now;
+  let len=0;
+  if(type==='paste'&&e.clipboardData) len=(e.clipboardData.getData('text')||'').length;
+  if((type==='copy'||type==='cut')&&window.getSelection) len=(window.getSelection()||{toString:()=>''}).toString().length;
+  if(type==='copy') copyCount++;
+  if(type==='paste') pasteCount++;
+  if(type==='cut') cutCount++;
+  fetch('/api/copy_paste',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:type,text_length:len})});
+  showQuizAlert(type==='paste'?`📋 PASTE detected! External content may have been used.`:`📄 ${type.toUpperCase()} detected`, type==='paste'?'critical':'warning');
+}
+
+// ── Alert ──
+let alertTO;
+function showQuizAlert(msg, sev='warning') {
+  const bar = document.getElementById('alertBar');
+  const txt = document.getElementById('alertBarText');
+  txt.textContent = msg;
+  txt.className   = 'ab-text '+(sev==='critical'?'red':'yellow');
+  bar.className   = 'alert-bar show'+(sev!=='critical'?' warn':'');
+  document.getElementById('pmDot').className = 'pm-dot alert';
+  clearTimeout(alertTO);
+  alertTO = setTimeout(() => {
+    bar.classList.remove('show');
+    document.getElementById('pmDot').className = 'pm-dot active';
+  }, 5000);
+}
+
+function setPmStatus(text, active) {
+  document.getElementById('pmText').textContent = text;
+  document.getElementById('pmDot').className    = 'pm-dot'+(active?' active':'');
+}
+
+// ── Submit ──
+function confirmSubmit() {
+  updateAnsweredCount();
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+async function submitQuiz() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  clearInterval(timerInterval);
+  clearInterval(frameInterval);
+  if(mediaStream) mediaStream.getTracks().forEach(t=>t.stop());
+  setPmStatus('SUBMITTED', false);
+
+  const answerMap = {};
+  QUESTIONS.forEach(q => { if(answers[q.id]!==undefined) answerMap[String(q.id)]=answers[q.id]; });
+
+  try {
+    const res  = await fetch('/api/quiz/submit',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({session_id:SESSION_ID, answers:answerMap})
+    });
+    const data = await res.json();
+    window.location.href = data.redirect || `/quiz/${SESSION_ID}/result`;
+  } catch(e) {
+    window.location.href = `/quiz/${SESSION_ID}/result`;
+  }
+}
+</script>
+</body>
+</html>

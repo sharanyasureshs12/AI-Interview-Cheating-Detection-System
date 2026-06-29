@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin — ProctorQuiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#07090d;--bg2:#0d1018;--bg3:#121720;--border:#1a2030;--border2:#232c3a;
+      --text:#c8d4e8;--text2:#6b7a94;--text3:#2e3a4a;
+      --green:#00e5a0;--green-dim:#00e5a018;--red:#ff3b5c;--red-dim:#ff3b5c20;
+      --yellow:#ffd447;--yellow-dim:#ffd44720;--orange:#ff7a2f;--blue:#4d9fff;
+      --font-mono:'Space Mono',monospace;--font-sans:'Syne',sans-serif;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font-mono);background:var(--bg);color:var(--text);min-height:100vh;}
+
+    nav{display:flex;align-items:center;justify-content:space-between;
+      padding:16px 32px;border-bottom:1px solid var(--border);background:var(--bg2);}
+    .nav-logo{font-family:var(--font-sans);font-weight:800;font-size:18px;}
+    .nav-logo span{color:var(--green);}
+    .nav-right{display:flex;gap:10px;align-items:center;}
+    .nav-btn{font-family:var(--font-mono);font-size:11px;padding:7px 14px;border-radius:4px;
+      border:1px solid var(--border2);background:var(--bg3);color:var(--text);
+      text-decoration:none;letter-spacing:.1em;transition:all .2s;}
+    .nav-btn:hover{border-color:var(--green);color:var(--green);}
+    .admin-badge{font-size:10px;letter-spacing:.15em;padding:5px 12px;border-radius:3px;
+      background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+
+    .page{max-width:1100px;margin:0 auto;padding:32px 24px;}
+    .page-title{font-family:var(--font-sans);font-size:28px;font-weight:800;margin-bottom:6px;}
+    .page-sub{font-size:12px;color:var(--text2);margin-bottom:28px;}
+
+    /* Overview stats */
+    .ov-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px;}
+    .ov-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;}
+    .ov-val{font-family:var(--font-sans);font-size:28px;font-weight:800;margin-bottom:4px;}
+    .ov-lbl{font-size:9px;color:var(--text3);letter-spacing:.15em;}
+
+    /* Results table */
+    .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px;}
+    .table-header{display:flex;align-items:center;justify-content:space-between;
+      padding:14px 18px;border-bottom:1px solid var(--border);}
+    .table-title{font-size:11px;letter-spacing:.2em;color:var(--text2);}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th{padding:10px 14px;text-align:left;font-size:9px;letter-spacing:.15em;color:var(--text3);
+      border-bottom:1px solid var(--border);font-weight:400;}
+    td{padding:11px 14px;border-bottom:1px solid var(--border);}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:var(--bg3);}
+    .grade-pill{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.05em;}
+    .gp-a{background:var(--green-dim);color:var(--green);}
+    .gp-b{background:#4d9fff18;color:var(--blue);}
+    .gp-c{background:var(--yellow-dim);color:var(--yellow);}
+    .gp-d,.gp-f{background:var(--red-dim);color:var(--red);}
+    .risk-pill{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;}
+    .rp-clean{background:var(--green-dim);color:var(--green);}
+    .rp-warn{background:var(--yellow-dim);color:var(--yellow);}
+    .rp-high{background:#ff7a2f18;color:var(--orange);}
+    .rp-crit{background:var(--red-dim);color:var(--red);}
+    .view-link{color:var(--blue);text-decoration:none;font-size:11px;letter-spacing:.05em;}
+    .view-link:hover{color:var(--green);}
+    .empty-state{padding:48px;text-align:center;color:var(--text3);}
+    .empty-icon{font-size:40px;margin-bottom:12px;opacity:.4;}
+
+    /* Filter bar */
+    .filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+    .filter-btn{font-family:var(--font-mono);font-size:10px;padding:6px 12px;
+      border-radius:4px;border:1px solid var(--border2);background:var(--bg3);
+      color:var(--text2);cursor:pointer;transition:all .2s;letter-spacing:.1em;}
+    .filter-btn:hover,.filter-btn.active{border-color:var(--green);color:var(--green);}
+    .search-input{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;
+      padding:6px 12px;font-family:var(--font-mono);font-size:12px;color:var(--text);
+      outline:none;transition:border-color .2s;flex:1;min-width:200px;}
+    .search-input:focus{border-color:var(--green);}
+    .search-input::placeholder{color:var(--text3);}
+  </style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">Proctor<span>Quiz</span> <span style="color:var(--text3);font-size:14px;font-weight:400;">Admin</span></div>
+  <div class="nav-right">
+    <span class="admin-badge">🔐 ADMIN PANEL</span>
+    <a href="/proctor" class="nav-btn">Live Proctor</a>
+    <a href="/quiz/register" class="nav-btn">New Quiz</a>
+    <a href="/" class="nav-btn">Home</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-title">Assessment Overview</div>
+  <div class="page-sub">All completed quiz sessions with integrity scores</div>
+
+  <!-- Overview Stats -->
+  {% set total = results|length %}
+  {% set avg_score = (results|map(attribute='percentage')|select('number')|list|sum / total)|round|int if total > 0 else 0 %}
+  {% set flagged = results|selectattr('proctor_score','gt',30)|list|length %}
+  {% set clean = results|selectattr('proctor_score','lt',20)|list|length %}
+  <div class="ov-grid">
+    <div class="ov-card">
+      <div class="ov-val" style="color:var(--blue)">{{ total }}</div>
+      <div class="ov-lbl">TOTAL SESSIONS</div>
+    </div>
+    <div class="ov-card">
+      <div class="ov-val" style="color:var(--green)">{{ avg_score }}%</div>
+      <div class="ov-lbl">AVG SCORE</div>
+    </div>
+    <div class="ov-card">
+      <div class="ov-val" style="color:var(--green)">{{ clean }}</div>
+      <div class="ov-lbl">CLEAN SESSIONS</div>
+    </div>
+    <div class="ov-card">
+      <div class="ov-val" style="color:var(--red)">{{ flagged }}</div>
+      <div class="ov-lbl">FLAGGED</div>
+    </div>
+    <div class="ov-card">
+      <div class="ov-val" style="color:var(--yellow)">{{ subjects|length }}</div>
+      <div class="ov-lbl">SUBJECTS</div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-bar">
+    <input class="search-input" id="searchInput" placeholder="Search by name or email…" oninput="filterTable()"/>
+    <button class="filter-btn active" data-filter="all" onclick="setFilter(this,'all')">ALL</button>
+    <button class="filter-btn" data-filter="clean" onclick="setFilter(this,'clean')">✓ CLEAN</button>
+    <button class="filter-btn" data-filter="flagged" onclick="setFilter(this,'flagged')">⚠ FLAGGED</button>
+    <button class="filter-btn" data-filter="python" onclick="setFilter(this,'python')">🐍 Python</button>
+    <button class="filter-btn" data-filter="webdev" onclick="setFilter(this,'webdev')">🌐 WebDev</button>
+    <button class="filter-btn" data-filter="ai" onclick="setFilter(this,'ai')">🤖 AI</button>
+    <button class="filter-btn" data-filter="dbms" onclick="setFilter(this,'dbms')">🗄️ DBMS</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-header">
+      <span class="table-title">SESSION RESULTS — {{ total }} RECORDS</span>
+      <a href="/proctor" style="font-size:11px;color:var(--blue);text-decoration:none;">→ Live Proctor Monitor</a>
+    </div>
+    {% if results %}
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th>CANDIDATE</th>
+          <th>SUBJECT</th>
+          <th>SCORE</th>
+          <th>GRADE</th>
+          <th>INTEGRITY</th>
+          <th>VIOLATIONS</th>
+          <th>STARTED</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr data-name="{{ r.name|lower }}" data-email="{{ r.email|lower }}"
+            data-subject="{{ r.subject }}"
+            data-clean="{{ 'clean' if r.get('proctor_score',0)<20 else 'flagged' }}">
+          <td>
+            <div style="font-weight:700">{{ r.name }}</div>
+            <div style="font-size:10px;color:var(--text3)">{{ r.email }}</div>
+          </td>
+          <td>
+            {% if r.subject=='python' %}🐍 Python
+            {% elif r.subject=='webdev' %}🌐 Web Dev
+            {% elif r.subject=='ai' %}🤖 AI/ML
+            {% elif r.subject=='dbms' %}🗄️ DBMS
+            {% else %}{{ r.subject }}{% endif %}
+          </td>
+          <td>
+            {% if r.percentage is defined %}
+              <span style="font-weight:700;color:
+                {%- if r.percentage>=75 %}var(--green)
+                {%- elif r.percentage>=50 %}var(--yellow)
+                {%- else %}var(--red){% endif %}">
+                {{ r.percentage }}%
+              </span>
+              <span style="font-size:10px;color:var(--text3)"> ({{ r.score }}/10)</span>
+            {% else %}--{% endif %}
+          </td>
+          <td>
+            {% if r.grade %}<span class="grade-pill gp-{{ r.grade|lower }}">{{ r.grade }}</span>{% else %}--{% endif %}
+          </td>
+          <td>
+            {% set ps = r.get('proctor_score',0) %}
+            <span class="risk-pill
+              {%- if ps<20 %} rp-clean
+              {%- elif ps<40 %} rp-warn
+              {%- elif ps<70 %} rp-high
+              {%- else %} rp-crit{% endif %}">
+              {{ ps }}
+              {%- if ps<20 %} CLEAN
+              {%- elif ps<40 %} CAUTION
+              {%- elif ps<70 %} HIGH RISK
+              {%- else %} CRITICAL{% endif %}
+            </span>
+          </td>
+          <td style="color:{{ 'var(--red)' if r.get('violations',0)>0 else 'var(--text3)' }}">
+            {{ r.get('violations',0) }}
+          </td>
+          <td style="font-size:11px;color:var(--text3)">
+            {{ r.start_time[:16].replace('T',' ') if r.start_time else '--' }}
+          </td>
+          <td>
+            <a href="/quiz/{{ r.session_id }}/result" class="view-link">VIEW →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div style="font-size:14px;margin-bottom:8px">No quiz sessions yet</div>
+      <div style="font-size:12px;color:var(--text3)">Sessions will appear here once candidates complete the quiz</div>
+      <div style="margin-top:16px;">
+        <a href="/quiz/register" style="color:var(--green);text-decoration:none;font-size:12px;">→ Start a quiz session</a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+let currentFilter = 'all';
+function setFilter(btn, filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTable();
+}
+function filterTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('#resultsTable tbody tr').forEach(row => {
+    const name    = row.dataset.name || '';
+    const email   = row.dataset.email || '';
+    const subject = row.dataset.subject || '';
+    const clean   = row.dataset.clean || '';
+    const matchSearch  = !search || name.includes(search) || email.includes(search);
+    const matchFilter  = currentFilter==='all' || currentFilter===subject || currentFilter===clean;
+    row.style.display  = (matchSearch && matchFilter) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

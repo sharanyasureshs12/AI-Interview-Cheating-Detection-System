@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ProctorQuiz — AI-Proctored Assessment Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#07090d;--bg2:#0d1018;--bg3:#121720;
+      --border:#1a2030;--border2:#232c3a;
+      --text:#c8d4e8;--text2:#6b7a94;--text3:#2e3a4a;
+      --green:#00e5a0;--green-dim:#00e5a015;
+      --blue:#4d9fff;--blue-dim:#4d9fff15;
+      --purple:#b06dff;--purple-dim:#b06dff15;
+      --yellow:#ffd447;--red:#ff3b5c;
+      --font-mono:'Space Mono',monospace;
+      --font-sans:'Syne',sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font-mono);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+    /* grid bg */
+    body::before{
+      content:'';position:fixed;inset:0;z-index:0;
+      background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+      background-size:48px 48px;opacity:.4;
+    }
+
+    /* NAV */
+    nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:18px 40px;border-bottom:1px solid var(--border);}
+    .nav-logo{display:flex;align-items:center;gap:10px;}
+    .nav-logo-icon{width:34px;height:34px;border:2px solid var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;}
+    .nav-logo-text{font-family:var(--font-sans);font-weight:800;font-size:18px;}
+    .nav-logo-text span{color:var(--green);}
+    .nav-links{display:flex;align-items:center;gap:24px;}
+    .nav-links a{color:var(--text2);text-decoration:none;font-size:12px;letter-spacing:.1em;transition:color .2s;}
+    .nav-links a:hover{color:var(--green);}
+    .nav-cta{background:var(--green);color:#000;font-family:var(--font-sans);font-weight:700;font-size:12px;
+      padding:8px 18px;border-radius:4px;text-decoration:none;letter-spacing:.1em;transition:all .2s;}
+    .nav-cta:hover{background:#00c988;transform:translateY(-1px);}
+
+    /* HERO */
+    .hero{position:relative;z-index:5;text-align:center;padding:100px 40px 80px;}
+    .hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-dim);
+      border:1px solid var(--green);border-radius:20px;padding:6px 16px;
+      font-size:11px;color:var(--green);letter-spacing:.15em;margin-bottom:28px;}
+    .hero-badge-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+    h1{font-family:var(--font-sans);font-size:clamp(36px,5vw,68px);font-weight:800;line-height:1.1;margin-bottom:24px;}
+    h1 .accent{color:var(--green);}
+    h1 .accent2{color:var(--blue);}
+    .hero-sub{font-size:15px;color:var(--text2);max-width:560px;margin:0 auto 48px;line-height:1.7;}
+    .hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+    .btn-primary{background:var(--green);color:#000;font-family:var(--font-sans);font-weight:700;font-size:14px;
+      padding:14px 32px;border-radius:6px;text-decoration:none;letter-spacing:.05em;transition:all .2s;border:none;cursor:pointer;}
+    .btn-primary:hover{background:#00c988;transform:translateY(-2px);box-shadow:0 8px 24px #00e5a030;}
+    .btn-secondary{background:transparent;color:var(--text);font-family:var(--font-sans);font-weight:600;font-size:14px;
+      padding:14px 32px;border-radius:6px;text-decoration:none;letter-spacing:.05em;
+      border:1px solid var(--border2);transition:all .2s;}
+    .btn-secondary:hover{border-color:var(--text2);transform:translateY(-2px);}
+
+    /* STATS ROW */
+    .stats-row{position:relative;z-index:5;display:flex;justify-content:center;gap:0;
+      border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+      background:var(--bg2);margin:0;}
+    .stat-item{flex:1;max-width:200px;text-align:center;padding:28px 20px;border-right:1px solid var(--border);}
+    .stat-item:last-child{border-right:none;}
+    .stat-num{font-family:var(--font-sans);font-size:32px;font-weight:800;color:var(--green);}
+    .stat-lbl{font-size:10px;color:var(--text3);letter-spacing:.15em;margin-top:4px;}
+
+    /* FEATURES */
+    .features{position:relative;z-index:5;padding:80px 40px;max-width:1200px;margin:0 auto;}
+    .section-header{text-align:center;margin-bottom:52px;}
+    .section-tag{font-size:10px;letter-spacing:.2em;color:var(--green);margin-bottom:10px;}
+    .section-title{font-family:var(--font-sans);font-size:32px;font-weight:800;}
+    .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+    .feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:28px;
+      transition:border-color .3s,transform .2s;}
+    .feature-card:hover{border-color:var(--green);transform:translateY(-3px);}
+    .fc-icon{font-size:28px;margin-bottom:14px;}
+    .fc-title{font-family:var(--font-sans);font-weight:700;font-size:16px;margin-bottom:8px;}
+    .fc-desc{font-size:12px;color:var(--text2);line-height:1.7;}
+
+    /* SUBJECTS */
+    .subjects{position:relative;z-index:5;padding:0 40px 80px;max-width:1200px;margin:0 auto;}
+    .subjects-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+    .subject-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+      padding:28px 20px;text-align:center;text-decoration:none;color:var(--text);
+      transition:all .2s;position:relative;overflow:hidden;}
+    .subject-card::before{content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,var(--green-dim),transparent);opacity:0;transition:opacity .3s;}
+    .subject-card:hover::before{opacity:1;}
+    .subject-card:hover{border-color:var(--green);transform:translateY(-4px);box-shadow:0 12px 32px #00e5a015;}
+    .sc-icon{font-size:36px;margin-bottom:12px;display:block;}
+    .sc-title{font-family:var(--font-sans);font-weight:700;font-size:15px;margin-bottom:6px;}
+    .sc-meta{font-size:11px;color:var(--text2);}
+    .sc-badge{display:inline-block;margin-top:10px;background:var(--green-dim);color:var(--green);
+      border:1px solid var(--green);border-radius:3px;font-size:9px;padding:3px 8px;letter-spacing:.1em;}
+
+    /* HOW IT WORKS */
+    .how{position:relative;z-index:5;padding:0 40px 80px;max-width:900px;margin:0 auto;}
+    .steps{display:flex;flex-direction:column;gap:0;}
+    .step{display:flex;gap:24px;align-items:flex-start;padding:28px 0;border-bottom:1px solid var(--border);}
+    .step:last-child{border-bottom:none;}
+    .step-num{width:44px;height:44px;border:2px solid var(--green);border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);
+      font-weight:800;font-size:16px;color:var(--green);flex-shrink:0;}
+    .step-content h3{font-family:var(--font-sans);font-weight:700;font-size:16px;margin-bottom:6px;}
+    .step-content p{font-size:12px;color:var(--text2);line-height:1.7;}
+
+    /* CTA */
+    .cta-section{position:relative;z-index:5;text-align:center;padding:80px 40px;
+      background:linear-gradient(180deg,transparent,var(--bg2));border-top:1px solid var(--border);}
+    .cta-section h2{font-family:var(--font-sans);font-size:36px;font-weight:800;margin-bottom:16px;}
+    .cta-section p{color:var(--text2);margin-bottom:36px;font-size:14px;}
+
+    /* FOOTER */
+    footer{position:relative;z-index:5;border-top:1px solid var(--border);padding:24px 40px;
+      display:flex;align-items:center;justify-content:space-between;background:var(--bg2);}
+    .footer-left{font-size:11px;color:var(--text3);}
+    .footer-links{display:flex;gap:20px;}
+    .footer-links a{font-size:11px;color:var(--text3);text-decoration:none;letter-spacing:.1em;}
+    .footer-links a:hover{color:var(--green);}
+
+    @media(max-width:900px){
+      .features-grid,.subjects-grid{grid-template-columns:1fr 1fr;}
+      .stats-row{flex-wrap:wrap;}
+      nav{padding:14px 20px;}
+    }
+    @media(max-width:600px){
+      .features-grid,.subjects-grid{grid-template-columns:1fr;}
+      .hero{padding:60px 20px 50px;}
+      h1{font-size:32px;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">👁️</div>
+    <div class="nav-logo-text">Proctor<span>Quiz</span></div>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#subjects">Subjects</a>
+    <a href="#how">How It Works</a>
+    <a href="/proctor">Proctor Dashboard</a>
+    <a href="/admin">Admin</a>
+  </div>
+  <a href="/quiz/register" class="nav-cta">START QUIZ →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    AI-POWERED PROCTORING ACTIVE
+  </div>
+  <h1>
+    Fair Assessments.<br>
+    <span class="accent">Real-Time</span> <span class="accent2">Intelligence.</span>
+  </h1>
+  <p class="hero-sub">
+    Take subject quizzes while our AI monitors for integrity — detecting phones, multiple faces, audio anomalies, and copy-paste in real time.
+  </p>
+  <div class="hero-btns">
+    <a href="/quiz/register" class="btn-primary">Take a Quiz →</a>
+    <a href="/proctor" class="btn-secondary">View Proctor Dashboard</a>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-item"><div class="stat-num">6</div><div class="stat-lbl">DETECTION LAYERS</div></div>
+  <div class="stat-item"><div class="stat-num">40</div><div class="stat-lbl">QUIZ QUESTIONS</div></div>
+  <div class="stat-item"><div class="stat-num">4</div><div class="stat-lbl">SUBJECTS</div></div>
+  <div class="stat-item"><div class="stat-num">0.5s</div><div class="stat-lbl">DETECTION LATENCY</div></div>
+  <div class="stat-item"><div class="stat-num">AI</div><div class="stat-lbl">YOLO v8 ENGINE</div></div>
+</div>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-header">
+    <div class="section-tag">DETECTION CAPABILITIES</div>
+    <h2 class="section-title">6-Layer Integrity Shield</h2>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="fc-icon">👁️</div>
+      <div class="fc-title">Face Detection</div>
+      <div class="fc-desc">Haar Cascade detects candidate absence or multiple people in frame every 500ms.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">📱</div>
+      <div class="fc-title">Phone Detection</div>
+      <div class="fc-desc">YOLOv8 neural network detects mobile phones — even when held in hand at any angle.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">🎙️</div>
+      <div class="fc-title">Audio Monitoring</div>
+      <div class="fc-desc">FFT-based voice analysis detects multiple voices or loud audio from external sources.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">📋</div>
+      <div class="fc-title">Copy-Paste Detection</div>
+      <div class="fc-desc">All Ctrl+C, Ctrl+V, Ctrl+X events are intercepted and logged with character counts.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">🔀</div>
+      <div class="fc-title">Tab Switch Detection</div>
+      <div class="fc-desc">Browser focus and visibility events are monitored to detect window switching.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">📊</div>
+      <div class="fc-title">Live Risk Score</div>
+      <div class="fc-desc">Real-time 0–100 integrity score with timeline, violation log, and CSV export.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SUBJECTS -->
+<section class="subjects" id="subjects">
+  <div class="section-header">
+    <div class="section-tag">AVAILABLE QUIZZES</div>
+    <h2 class="section-title">Choose Your Subject</h2>
+  </div>
+  <div class="subjects-grid">
+    <a href="/quiz/register?subject=python" class="subject-card">
+      <span class="sc-icon">🐍</span>
+      <div class="sc-title">Python Programming</div>
+      <div class="sc-meta">10 Questions · 20 Minutes</div>
+      <div class="sc-badge">BEGINNER–MID</div>
+    </a>
+    <a href="/quiz/register?subject=webdev" class="subject-card">
+      <span class="sc-icon">🌐</span>
+      <div class="sc-title">Web Development</div>
+      <div class="sc-meta">10 Questions · 20 Minutes</div>
+      <div class="sc-badge">BEGINNER–MID</div>
+    </a>
+    <a href="/quiz/register?subject=ai" class="subject-card">
+      <span class="sc-icon">🤖</span>
+      <div class="sc-title">Artificial Intelligence</div>
+      <div class="sc-meta">10 Questions · 25 Minutes</div>
+      <div class="sc-badge">INTERMEDIATE</div>
+    </a>
+    <a href="/quiz/register?subject=dbms" class="subject-card">
+      <span class="sc-icon">🗄️</span>
+      <div class="sc-title">Database Management</div>
+      <div class="sc-meta">10 Questions · 20 Minutes</div>
+      <div class="sc-badge">BEGINNER–MID</div>
+    </a>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="section-header">
+    <div class="section-tag">PROCESS</div>
+    <h2 class="section-title">How It Works</h2>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Register & Choose Subject</h3>
+        <p>Enter your name, email, and select a quiz subject. Your unique session ID is generated.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Allow Camera & Microphone</h3>
+        <p>Grant browser access to your webcam and mic. ProctorAI begins monitoring immediately.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Answer Questions Under Timer</h3>
+        <p>Work through 10 MCQ questions. All violations are logged silently in real time.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Submit & See Results</h3>
+        <p>Your score, grade, and integrity report are shown together — giving a complete picture.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Ready to begin?</h2>
+  <p>Your quiz is monitored, timed, and fully proctored by AI.</p>
+  <a href="/quiz/register" class="btn-primary" style="display:inline-block;">Start Assessment →</a>
+</section>
+
+<footer>
+  <div class="footer-left">© 2025 ProctorQuiz · AI-Powered Assessment Platform</div>
+  <div class="footer-links">
+    <a href="/quiz/register">Take Quiz</a>
+    <a href="/proctor">Proctor</a>
+    <a href="/admin">Admin</a>
+  </div>
+</footer>
+
+</body>
+</html>

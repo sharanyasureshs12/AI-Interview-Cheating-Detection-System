@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Results — ProctorQuiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#07090d;--bg2:#0d1018;--bg3:#121720;--border:#1a2030;--border2:#232c3a;
+      --text:#c8d4e8;--text2:#6b7a94;--text3:#2e3a4a;
+      --green:#00e5a0;--green-dim:#00e5a018;--red:#ff3b5c;--red-dim:#ff3b5c20;
+      --yellow:#ffd447;--yellow-dim:#ffd44720;--orange:#ff7a2f;--blue:#4d9fff;
+      --font-mono:'Space Mono',monospace;--font-sans:'Syne',sans-serif;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font-mono);background:var(--bg);color:var(--text);min-height:100vh;padding:0;}
+    body::before{content:'';position:fixed;inset:0;z-index:0;
+      background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+      background-size:48px 48px;opacity:.25;}
+
+    nav{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;
+      padding:16px 32px;border-bottom:1px solid var(--border);background:var(--bg2);}
+    .nav-logo{font-family:var(--font-sans);font-weight:800;font-size:18px;}
+    .nav-logo span{color:var(--green);}
+    .nav-actions{display:flex;gap:10px;}
+    .nav-btn{font-family:var(--font-mono);font-size:11px;padding:8px 16px;border-radius:4px;
+      border:1px solid var(--border2);background:var(--bg3);color:var(--text);
+      text-decoration:none;letter-spacing:.1em;transition:all .2s;}
+    .nav-btn:hover{border-color:var(--green);color:var(--green);}
+
+    .page{position:relative;z-index:5;max-width:900px;margin:0 auto;padding:40px 24px;}
+
+    /* Score Hero */
+    .score-hero{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;}
+    .score-card{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:32px;text-align:center;
+      position:relative;overflow:hidden;}
+    .score-card::before{content:'';position:absolute;inset:0;opacity:.06;
+      background:radial-gradient(circle at 50% 0%,var(--green),transparent 60%);}
+    .score-card.integrity::before{background:radial-gradient(circle at 50% 0%,var(--red),transparent 60%);}
+    .sc-label{font-size:10px;letter-spacing:.2em;color:var(--text2);margin-bottom:16px;}
+    .sc-big{font-family:var(--font-sans);font-size:72px;font-weight:800;line-height:1;margin-bottom:8px;}
+    .sc-sub{font-size:14px;color:var(--text2);}
+    .grade-badge{display:inline-block;font-family:var(--font-sans);font-size:28px;font-weight:800;
+      padding:8px 20px;border-radius:8px;margin-top:10px;letter-spacing:.05em;}
+    .grade-a{background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
+    .grade-b{background:#4d9fff18;color:var(--blue);border:1px solid var(--blue);}
+    .grade-c{background:var(--yellow-dim);color:var(--yellow);border:1px solid var(--yellow);}
+    .grade-d{background:#ff7a2f18;color:var(--orange);border:1px solid var(--orange);}
+    .grade-f{background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+
+    /* Integrity gauge */
+    .integrity-gauge{margin:12px 0 8px;}
+    .ig-track{height:8px;background:var(--border2);border-radius:4px;overflow:hidden;margin-bottom:6px;}
+    .ig-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+    .ig-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);}
+
+    /* Stats row */
+    .stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:28px;}
+    .stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;}
+    .stat-box.alert{border-color:var(--red-dim);}
+    .sb-val{font-family:var(--font-sans);font-size:22px;font-weight:800;margin-bottom:3px;}
+    .sb-lbl{font-size:9px;color:var(--text3);letter-spacing:.12em;}
+
+    /* Sections */
+    .section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden;}
+    .sec-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .sec-title{font-size:10px;letter-spacing:.2em;color:var(--text2);}
+    .sec-badge{font-size:10px;padding:3px 8px;border-radius:3px;letter-spacing:.1em;}
+    .badge-clean{background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
+    .badge-risk{background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+    .badge-warn{background:var(--yellow-dim);color:var(--yellow);border:1px solid var(--yellow);}
+
+    /* Violation list */
+    .viol-list{padding:12px;}
+    .viol-item{display:flex;align-items:flex-start;gap:10px;padding:9px 10px;
+      border-radius:5px;margin-bottom:5px;border-left:2px solid transparent;font-size:12px;}
+    .viol-item.critical{background:var(--red-dim);border-left-color:var(--red);}
+    .viol-item.warning {background:var(--yellow-dim);border-left-color:var(--yellow);}
+    .vi-time{color:var(--text3);font-size:10px;min-width:52px;flex-shrink:0;}
+    .vi-icon{font-size:14px;}
+    .vi-content{}
+    .vi-type{font-size:9px;letter-spacing:.1em;margin-bottom:2px;}
+    .vi-type.critical{color:var(--red);}
+    .vi-type.warning{color:var(--yellow);}
+    .vi-msg{color:var(--text2);}
+    .no-violations{padding:24px;text-align:center;color:var(--green);font-size:13px;}
+
+    /* Session info */
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0;}
+    .info-item{padding:14px 18px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);}
+    .info-item:nth-child(even){border-right:none;}
+    .info-item:last-child,.info-item:nth-last-child(2){border-bottom:none;}
+    .ii-label{font-size:9px;letter-spacing:.15em;color:var(--text3);margin-bottom:4px;}
+    .ii-val{font-size:13px;color:var(--text);}
+
+    .action-row{display:flex;gap:12px;justify-content:center;margin-top:28px;flex-wrap:wrap;}
+    .action-btn{font-family:var(--font-sans);font-weight:700;font-size:13px;padding:14px 28px;
+      border-radius:8px;text-decoration:none;letter-spacing:.05em;transition:all .2s;cursor:pointer;border:none;}
+    .action-btn.primary{background:var(--green);color:#000;}
+    .action-btn.primary:hover{background:#00c988;transform:translateY(-2px);}
+    .action-btn.secondary{background:var(--bg2);color:var(--text);border:1px solid var(--border2);}
+    .action-btn.secondary:hover{border-color:var(--green);}
+
+    @media(max-width:700px){
+      .score-hero{grid-template-columns:1fr;}
+      .stats-row{grid-template-columns:repeat(3,1fr);}
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">Proctor<span>Quiz</span></div>
+  <div class="nav-actions">
+    <a href="/proctor" class="nav-btn">Proctor Dashboard</a>
+    <a href="/admin" class="nav-btn">Admin View</a>
+    <a href="/" class="nav-btn">Home</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- Score Hero -->
+  <div class="score-hero">
+    <!-- Quiz Score -->
+    <div class="score-card">
+      <div class="sc-label">QUIZ SCORE</div>
+      {% if session.score is not none %}
+        <div class="sc-big" style="color:
+          {%- if session.percentage >= 75 %}var(--green)
+          {%- elif session.percentage >= 50 %}var(--yellow)
+          {%- else %}var(--red){% endif %}">
+          {{ session.percentage }}%
+        </div>
+        <div class="sc-sub">{{ session.score }} / {{ session.get('total', 10) if session.get('total') else '10' }} correct</div>
+        <div class="grade-badge grade-{{ session.grade|lower }}">{{ session.grade }}</div>
+      {% else %}
+        <div class="sc-big" style="color:var(--text3)">--</div>
+        <div class="sc-sub">Not submitted</div>
+      {% endif %}
+    </div>
+
+    <!-- Integrity Score -->
+    <div class="score-card integrity">
+      <div class="sc-label">INTEGRITY REPORT</div>
+      {% set ps = proctor_score %}
+      <div class="sc-big" style="color:
+        {%- if ps < 20 %}var(--green)
+        {%- elif ps < 40 %}var(--yellow)
+        {%- elif ps < 70 %}var(--orange)
+        {%- else %}var(--red){% endif %}">
+        {{ ps }}
+      </div>
+      <div class="sc-sub">Risk Score (0=clean, 100=critical)</div>
+      <div class="integrity-gauge">
+        <div class="ig-track">
+          <div class="ig-fill" style="width:{{ [ps, 100]|min }}%;background:
+            {%- if ps<20 %}var(--green)
+            {%- elif ps<40 %}var(--yellow)
+            {%- elif ps<70 %}var(--orange)
+            {%- else %}var(--red){% endif %}"></div>
+        </div>
+        <div class="ig-labels"><span>CLEAN</span><span>HIGH RISK</span></div>
+      </div>
+      <div class="grade-badge
+        {%- if ps<20 %} grade-a
+        {%- elif ps<40 %} grade-c
+        {%- elif ps<70 %} grade-d
+        {%- else %} grade-f{% endif %}">
+        {%- if ps<20 %}CLEAN{%- elif ps<40 %}CAUTION{%- elif ps<70 %}HIGH RISK{%- else %}CRITICAL{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-box {% if session.no_face_count|default(0) > 0 %}alert{% endif %}">
+      <div class="sb-val">{{ violation_count }}</div>
+      <div class="sb-lbl">VIOLATIONS</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-val">{{ session.get('tab_switch_count', 0)|default(0) }}</div>
+      <div class="sb-lbl">TAB SWITCHES</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-val">{{ session.get('copy_paste_count', 0)|default(0) }}</div>
+      <div class="sb-lbl">COPY-PASTE</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-val">{{ session.get('phone_count', 0)|default(0) }}</div>
+      <div class="sb-lbl">PHONE DET.</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-val">{{ session.get('audio_alert_count', 0)|default(0) }}</div>
+      <div class="sb-lbl">AUDIO ALERTS</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-val">{{ proctor_score }}</div>
+      <div class="sb-lbl">RISK SCORE</div>
+    </div>
+  </div>
+
+  <!-- Violation Log -->
+  <div class="section">
+    <div class="sec-header">
+      <span class="sec-title">VIOLATION LOG</span>
+      {% if violation_count == 0 %}
+        <span class="sec-badge badge-clean">✓ NO VIOLATIONS</span>
+      {% elif proctor_score >= 50 %}
+        <span class="sec-badge badge-risk">{{ violation_count }} VIOLATIONS</span>
+      {% else %}
+        <span class="sec-badge badge-warn">{{ violation_count }} VIOLATIONS</span>
+      {% endif %}
+    </div>
+    {% if violations %}
+      <div class="viol-list">
+        {% for v in violations %}
+        <div class="viol-item {{ v.severity }}">
+          <span class="vi-time">{{ v.timestamp }}</span>
+          <span class="vi-icon">
+            {%- if v.type=='NO_FACE' %}🙈
+            {%- elif v.type=='MULTIPLE_FACES' %}👥
+            {%- elif v.type=='PHONE_DETECTED' %}📱
+            {%- elif v.type=='TAB_SWITCH' %}🔀
+            {%- elif v.type=='COPY_PASTE' %}📋
+            {%- elif 'AUDIO' in v.type %}🎙️
+            {%- else %}⚠️{% endif %}
+          </span>
+          <div class="vi-content">
+            <div class="vi-type {{ v.severity }}">{{ v.type.replace('_',' ') }}</div>
+            <div class="vi-msg">{{ v.message }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-violations">🛡️ No violations detected — Clean session!</div>
+    {% endif %}
+  </div>
+
+  <!-- Session Info -->
+  <div class="section">
+    <div class="sec-header">
+      <span class="sec-title">SESSION DETAILS</span>
+      <span class="sec-badge" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2)">
+        ID: {{ session.session_id }}
+      </span>
+    </div>
+    <div class="info-grid">
+      <div class="info-item"><div class="ii-label">CANDIDATE</div><div class="ii-val">{{ session.name }}</div></div>
+      <div class="info-item"><div class="ii-label">EMAIL</div><div class="ii-val">{{ session.email }}</div></div>
+      <div class="info-item"><div class="ii-label">SUBJECT</div><div class="ii-val">{{ quiz.title }}</div></div>
+      <div class="info-item"><div class="ii-label">START TIME</div><div class="ii-val">{{ session.start_time[:19].replace('T',' ') }}</div></div>
+      <div class="info-item"><div class="ii-label">END TIME</div><div class="ii-val">{{ session.get('end_time','--')[:19].replace('T',' ') }}</div></div>
+      <div class="info-item"><div class="ii-label">FINAL GRADE</div><div class="ii-val" style="font-weight:700;font-size:16px">{{ session.get('grade','--') }}</div></div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row">
+    <a href="/quiz/register" class="action-btn primary">Take Another Quiz →</a>
+    <a href="/proctor" class="action-btn secondary">View Proctor Dashboard</a>
+    <a href="/" class="action-btn secondary">Back to Home</a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Register — ProctorQuiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#07090d;--bg2:#0d1018;--bg3:#121720;--border:#1a2030;--border2:#232c3a;
+      --text:#c8d4e8;--text2:#6b7a94;--text3:#2e3a4a;
+      --green:#00e5a0;--green-dim:#00e5a015;--red:#ff3b5c;--red-dim:#ff3b5c20;
+      --yellow:#ffd447;--blue:#4d9fff;--purple:#b06dff;
+      --font-mono:'Space Mono',monospace;--font-sans:'Syne',sans-serif;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font-mono);background:var(--bg);color:var(--text);min-height:100vh;
+      display:flex;align-items:center;justify-content:center;padding:20px;}
+    body::before{content:'';position:fixed;inset:0;z-index:0;
+      background-image:linear-gradient(var(--border) 1px,transparent 1px),
+        linear-gradient(90deg,var(--border) 1px,transparent 1px);
+      background-size:48px 48px;opacity:.3;}
+    .card{position:relative;z-index:5;background:var(--bg2);border:1px solid var(--border2);
+      border-radius:12px;width:100%;max-width:560px;overflow:hidden;}
+    .card-header{padding:28px 32px 20px;border-bottom:1px solid var(--border);
+      background:linear-gradient(135deg,var(--green-dim),transparent);}
+    .back-link{font-size:11px;color:var(--text2);text-decoration:none;letter-spacing:.1em;
+      display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;transition:color .2s;}
+    .back-link:hover{color:var(--green);}
+    .card-title{font-family:var(--font-sans);font-size:24px;font-weight:800;margin-bottom:4px;}
+    .card-sub{font-size:12px;color:var(--text2);}
+    .card-body{padding:28px 32px;}
+
+    /* Steps indicator */
+    .steps-bar{display:flex;gap:0;margin-bottom:24px;}
+    .step-item{flex:1;text-align:center;position:relative;}
+    .step-item::after{content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;
+      background:var(--border2);z-index:0;}
+    .step-item:last-child::after{display:none;}
+    .step-circle{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);
+      background:var(--bg3);display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:700;margin:0 auto 6px;position:relative;z-index:1;transition:all .3s;}
+    .step-item.active .step-circle{border-color:var(--green);background:var(--green);color:#000;}
+    .step-item.done .step-circle{border-color:var(--green);background:var(--green-dim);color:var(--green);}
+    .step-label{font-size:9px;color:var(--text3);letter-spacing:.1em;}
+    .step-item.active .step-label{color:var(--green);}
+
+    /* Form sections */
+    .form-section{display:none;}
+    .form-section.active{display:block;}
+    .form-group{margin-bottom:18px;}
+    label{display:block;font-size:10px;letter-spacing:.15em;color:var(--text2);margin-bottom:7px;}
+    input,select{width:100%;background:var(--bg3);border:1px solid var(--border2);
+      border-radius:6px;padding:11px 13px;font-family:var(--font-mono);font-size:13px;
+      color:var(--text);outline:none;transition:border-color .2s;}
+    input:focus,select:focus{border-color:var(--green);}
+    input::placeholder{color:var(--text3);}
+    select option{background:var(--bg3);}
+
+    /* Subject grid */
+    .subject-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:7px;}
+    .subject-opt{background:var(--bg3);border:1.5px solid var(--border2);border-radius:8px;
+      padding:12px;text-align:center;cursor:pointer;transition:all .2s;user-select:none;}
+    .subject-opt:hover{border-color:var(--green);}
+    .subject-opt.selected{border-color:var(--green);background:var(--green-dim);}
+    .s-icon{font-size:20px;display:block;margin-bottom:5px;}
+    .s-name{font-size:11px;font-weight:700;}
+    .s-dur{font-size:9px;color:var(--text2);margin-top:2px;}
+
+    /* ID Photo upload */
+    .photo-upload-area{border:2px dashed var(--border2);border-radius:10px;padding:24px;
+      text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;}
+    .photo-upload-area:hover{border-color:var(--green);background:var(--green-dim);}
+    .photo-upload-area.has-photo{border-color:var(--green);border-style:solid;}
+    .photo-upload-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+    .pua-icon{font-size:36px;margin-bottom:10px;}
+    .pua-title{font-family:var(--font-sans);font-weight:700;font-size:14px;margin-bottom:5px;}
+    .pua-sub{font-size:11px;color:var(--text2);}
+    .photo-preview{display:none;position:relative;}
+    .photo-preview img{width:100%;max-height:180px;object-fit:cover;border-radius:8px;display:block;}
+    .photo-preview-overlay{position:absolute;inset:0;background:rgba(0,229,160,.1);
+      border-radius:8px;display:flex;align-items:center;justify-content:center;}
+    .photo-verified{font-size:12px;color:var(--green);font-weight:700;}
+
+    /* Live camera preview for face capture */
+    .cam-section{background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;}
+    .cam-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;
+      letter-spacing:.15em;color:var(--text2);display:flex;align-items:center;justify-content:space-between;}
+    .cam-body{position:relative;background:#000;height:160px;}
+    #regVideo{width:100%;height:100%;object-fit:cover;display:block;}
+    .cam-hint{padding:10px 14px;font-size:10px;color:var(--text3);line-height:1.5;}
+    .cam-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;background:var(--bg3);font-size:11px;color:var(--text2);gap:8px;}
+    .cam-overlay.hidden{display:none;}
+    .cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+      width:100px;height:120px;border:2px solid var(--green);border-radius:50%;opacity:.5;}
+
+    /* Verification badge */
+    .verify-badge{display:flex;align-items:center;gap:10px;padding:12px 14px;
+      border-radius:8px;margin-bottom:16px;border:1px solid var(--border);}
+    .verify-badge.success{background:var(--green-dim);border-color:var(--green);}
+    .verify-badge.warning{background:#ffd44720;border-color:var(--yellow);}
+    .verify-badge.error{background:var(--red-dim);border-color:var(--red);}
+    .vb-icon{font-size:20px;}
+    .vb-text{font-size:12px;line-height:1.5;}
+
+    /* Rules */
+    .rules{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:13px;margin-bottom:18px;}
+    .rules-title{font-size:10px;letter-spacing:.15em;color:var(--text2);margin-bottom:7px;}
+    .rule{font-size:11px;color:var(--text2);display:flex;align-items:flex-start;gap:7px;margin-bottom:4px;line-height:1.5;}
+
+    /* Buttons */
+    .btn-row{display:flex;gap:10px;}
+    .submit-btn{flex:1;background:var(--green);color:#000;font-family:var(--font-sans);
+      font-weight:800;font-size:13px;padding:13px;border:none;border-radius:8px;
+      cursor:pointer;letter-spacing:.05em;transition:all .2s;}
+    .submit-btn:hover{background:#00c988;transform:translateY(-1px);}
+    .submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    .back-btn{background:var(--bg3);color:var(--text);font-family:var(--font-sans);
+      font-weight:600;font-size:13px;padding:13px 20px;border:1px solid var(--border2);
+      border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;}
+    .back-btn:hover{border-color:var(--text2);}
+    .error-msg{background:var(--red-dim);border:1px solid var(--red);border-radius:6px;
+      padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:14px;display:none;}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <a href="/" class="back-link">← Back to Home</a>
+    <div class="card-title">Candidate Registration</div>
+    <div class="card-sub">Complete all steps to begin your proctored quiz</div>
+  </div>
+  <div class="card-body">
+
+    <!-- Step indicator -->
+    <div class="steps-bar">
+      <div class="step-item active" id="step1Indicator">
+        <div class="step-circle">1</div>
+        <div class="step-label">DETAILS</div>
+      </div>
+      <div class="step-item" id="step2Indicator">
+        <div class="step-circle">2</div>
+        <div class="step-label">ID VERIFY</div>
+      </div>
+      <div class="step-item" id="step3Indicator">
+        <div class="step-circle">3</div>
+        <div class="step-label">SUBJECT</div>
+      </div>
+    </div>
+
+    <div class="error-msg" id="errMsg"></div>
+
+    <!-- STEP 1: Personal Details -->
+    <div class="form-section active" id="section1">
+      <div class="rules">
+        <div class="rules-title">⚠️ PROCTORING RULES</div>
+        <div class="rule"><span>📷</span><span>Camera & microphone must remain on throughout</span></div>
+        <div class="rule"><span>🪪</span><span>Upload a clear photo ID for face verification</span></div>
+        <div class="rule"><span>📱</span><span>No mobile phones — AI will detect them</span></div>
+        <div class="rule"><span>🔒</span><span>No tab switching, copy-paste, or screen recording</span></div>
+        <div class="rule"><span>🔇</span><span>Take quiz in a quiet room — audio is monitored</span></div>
+      </div>
+      <div class="form-group">
+        <label>FULL NAME</label>
+        <input type="text" id="nameInput" placeholder="e.g. Arjun Sharma" autocomplete="off"/>
+      </div>
+      <div class="form-group">
+        <label>EMAIL ADDRESS</label>
+        <input type="email" id="emailInput" placeholder="e.g. arjun@example.com" autocomplete="off"/>
+      </div>
+      <div class="btn-row">
+        <button class="submit-btn" onclick="goStep2()">NEXT: ID VERIFICATION →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: ID Verification -->
+    <div class="form-section" id="section2">
+      <div style="margin-bottom:16px;">
+        <div style="font-family:var(--font-sans);font-size:16px;font-weight:700;margin-bottom:6px;">🪪 Identity Verification</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;">Upload a photo ID (Aadhar, College ID, Passport). Our AI will extract your face and verify your identity throughout the quiz.</div>
+      </div>
+
+      <!-- Photo Upload -->
+      <div class="form-group">
+        <label>UPLOAD PHOTO ID</label>
+        <div class="photo-upload-area" id="photoArea">
+          <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)"/>
+          <div id="photoPlaceholder">
+            <div class="pua-icon">🪪</div>
+            <div class="pua-title">Click to upload ID photo</div>
+            <div class="pua-sub">Aadhar · College ID · Passport · Driving License</div>
+          </div>
+          <div class="photo-preview" id="photoPreview">
+            <img id="photoImg" src="" alt="ID Preview"/>
+            <div class="photo-preview-overlay">
+              <div class="photo-verified">✓ Photo uploaded</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OR live camera capture -->
+      <div style="text-align:center;font-size:11px;color:var(--text3);margin:10px 0;">— OR TAKE A LIVE PHOTO —</div>
+
+      <div class="cam-section">
+        <div class="cam-header">
+          <span>📸 LIVE CAMERA CAPTURE</span>
+          <button onclick="startRegCam()" style="background:var(--bg2);border:1px solid var(--border2);color:var(--green);
+            font-family:var(--font-mono);font-size:10px;padding:4px 10px;border-radius:3px;cursor:pointer;letter-spacing:.1em;">
+            START CAM
+          </button>
+        </div>
+        <div class="cam-body">
+          <video id="regVideo" autoplay muted playsinline></video>
+          <div class="cam-overlay" id="camOverlay">
+            <span style="font-size:28px;opacity:.4">📷</span>
+            <span>Click START CAM to enable</span>
+          </div>
+          <div class="cam-frame"></div>
+        </div>
+        <div class="cam-hint">Position your face clearly in the oval frame, then click Capture.</div>
+      </div>
+
+      <div id="verifyBadge" style="display:none;" class="verify-badge">
+        <span class="vb-icon" id="vbIcon">✓</span>
+        <div class="vb-text" id="vbText"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="back-btn" onclick="goStep1()">← BACK</button>
+        <button class="submit-btn" id="captureBtn" onclick="captureRegPhoto()" style="display:none;">📸 CAPTURE PHOTO</button>
+        <button class="submit-btn" id="step2NextBtn" onclick="goStep3()">NEXT: SELECT SUBJECT →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Subject Selection -->
+    <div class="form-section" id="section3">
+      <div class="form-group">
+        <label>SELECT QUIZ SUBJECT</label>
+        <div class="subject-grid" id="subjectGrid">
+          <div class="subject-opt selected" data-val="python" onclick="selectSubject(this)">
+            <span class="s-icon">🐍</span><div class="s-name">Python</div><div class="s-dur">10 Q · 20 min</div>
+          </div>
+          <div class="subject-opt" data-val="webdev" onclick="selectSubject(this)">
+            <span class="s-icon">🌐</span><div class="s-name">Web Dev</div><div class="s-dur">10 Q · 20 min</div>
+          </div>
+          <div class="subject-opt" data-val="ai" onclick="selectSubject(this)">
+            <span class="s-icon">🤖</span><div class="s-name">AI / ML</div><div class="s-dur">10 Q · 25 min</div>
+          </div>
+          <div class="subject-opt" data-val="dbms" onclick="selectSubject(this)">
+            <span class="s-icon">🗄️</span><div class="s-name">DBMS</div><div class="s-dur">10 Q · 20 min</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="faceRecStatus" style="margin-bottom:16px;padding:10px 13px;border-radius:6px;
+        border:1px solid var(--border);background:var(--bg3);font-size:11px;color:var(--text2);">
+        🔍 Checking face recognition availability…
+      </div>
+
+      <div class="btn-row">
+        <button class="back-btn" onclick="goStep2()">← BACK</button>
+        <button class="submit-btn" id="finalBtn" onclick="submitRegistration()">🚀 START PROCTORED QUIZ</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let selectedSubject = 'python';
+let capturedPhotoBlob = null;
+let uploadedFile = null;
+let regStream = null;
+
+// Pre-select from URL
+const urlSubject = new URLSearchParams(window.location.search).get('subject');
+if (urlSubject) {
+  selectedSubject = urlSubject;
+  document.querySelectorAll('.subject-opt').forEach(e => e.classList.remove('selected'));
+  const t = document.querySelector(`[data-val="${urlSubject}"]`);
+  if (t) t.classList.add('selected');
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errMsg');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display='none', 4000);
+}
+
+// ── Step navigation ──
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById(`section${i}`).classList.toggle('active', i===n);
+    const ind = document.getElementById(`step${i}Indicator`);
+    ind.classList.toggle('active', i===n);
+    ind.classList.toggle('done', i<n);
+  });
+}
+
+function goStep1() { setStep(1); }
+
+function goStep2() {
+  const name  = document.getElementById('nameInput').value.trim();
+  const email = document.getElementById('emailInput').value.trim();
+  if (!name)  { showErr('Please enter your full name.'); return; }
+  if (!email || !email.includes('@')) { showErr('Please enter a valid email.'); return; }
+  setStep(2);
+}
+
+function goStep3() {
+  setStep(3);
+  // Check face recognition status
+  fetch('/api/stats').then(r=>r.json()).then(d => {
+    const el = document.getElementById('faceRecStatus');
+    if (d.stats && d.stats.face_recognition_available) {
+      el.style.borderColor='var(--green)';
+      el.style.color='var(--green)';
+      el.textContent = '✅ Face Recognition ACTIVE — your identity will be verified throughout the quiz';
+      if (!uploadedFile && !capturedPhotoBlob) {
+        el.textContent += ' · ⚠️ No ID photo uploaded — identity verification skipped';
+        el.style.color='var(--yellow)'; el.style.borderColor='var(--yellow)';
+      }
+    } else {
+      el.style.borderColor='var(--yellow)';
+      el.style.color='var(--yellow)';
+      el.textContent = '⚠️ Face recognition library not installed. Run: pip install face-recognition';
+    }
+  }).catch(() => {});
+}
+
+// ── Subject selection ──
+function selectSubject(el) {
+  document.querySelectorAll('.subject-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedSubject = el.dataset.val;
+}
+
+// ── Photo upload ──
+function handlePhotoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  uploadedFile = file;
+  capturedPhotoBlob = null;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('photoImg').src = ev.target.result;
+    document.getElementById('photoPlaceholder').style.display = 'none';
+    document.getElementById('photoPreview').style.display = 'block';
+    document.getElementById('photoArea').classList.add('has-photo');
+    showVerifyBadge('success','✓ ID photo uploaded — face will be extracted and verified');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Live camera ──
+async function startRegCam() {
+  try {
+    regStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    document.getElementById('regVideo').srcObject = regStream;
+    document.getElementById('camOverlay').classList.add('hidden');
+    document.getElementById('captureBtn').style.display = 'block';
+  } catch(e) {
+    showErr('Camera access denied: ' + e.message);
+  }
+}
+
+function captureRegPhoto() {
+  const video = document.getElementById('regVideo');
+  if (!video.videoWidth) { showErr('Camera not ready yet.'); return; }
+  const canvas = document.createElement('canvas');
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    capturedPhotoBlob = blob;
+    uploadedFile = null;
+    document.getElementById('photoImg').src = canvas.toDataURL('image/jpeg');
+    document.getElementById('photoPlaceholder').style.display = 'none';
+    document.getElementById('photoPreview').style.display = 'block';
+    document.getElementById('photoArea').classList.add('has-photo');
+    showVerifyBadge('success','✓ Live photo captured — face will be extracted and verified');
+    if (regStream) { regStream.getTracks().forEach(t=>t.stop()); regStream=null; }
+  }, 'image/jpeg', 0.9);
+}
+
+function showVerifyBadge(type, msg) {
+  const el = document.getElementById('verifyBadge');
+  el.className = `verify-badge ${type}`; el.style.display='flex';
+  document.getElementById('vbIcon').textContent = type==='success'?'✅':type==='warning'?'⚠️':'❌';
+  document.getElementById('vbText').textContent = msg;
+}
+
+// ── Final submit ──
+async function submitRegistration() {
+  const btn = document.getElementById('finalBtn');
+  btn.disabled = true; btn.textContent = '⏳ Creating session…';
+
+  const formData = new FormData();
+  formData.append('name',    document.getElementById('nameInput').value.trim());
+  formData.append('email',   document.getElementById('emailInput').value.trim());
+  formData.append('subject', selectedSubject);
+
+  if (capturedPhotoBlob) {
+    formData.append('id_photo', capturedPhotoBlob, 'captured_id.jpg');
+  } else if (uploadedFile) {
+    formData.append('id_photo', uploadedFile);
+  }
+
+  try {
+    const res  = await fetch('/quiz/start', { method:'POST', body: formData });
+    const data = await res.json();
+    if (data.error) { showErr(data.error); btn.disabled=false; btn.textContent='🚀 START PROCTORED QUIZ'; return; }
+    window.location.href = data.redirect;
+  } catch(e) {
+    showErr('Server error. Please try again.');
+    btn.disabled=false; btn.textContent='🚀 START PROCTORED QUIZ';
+  }
+}
+</script>
+</body>
+</html>

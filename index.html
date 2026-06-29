@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ProctorAI — Interview Integrity Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<!-- ── HEADER ── -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">
+      <div class="logo-icon">
+        <span class="eye-outer"><span class="eye-inner"></span></span>
+      </div>
+      <div>
+        <div class="logo-title">ProctorAI</div>
+        <div class="logo-sub">Interview Integrity Monitor v3.0</div>
+      </div>
+    </div>
+  </div>
+  <div class="header-center">
+    <div class="status-pill" id="statusPill">
+      <span class="pulse-dot"></span>
+      <span id="statusText">INITIALIZING</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="session-info">
+      <span class="session-label">SESSION</span>
+      <span class="session-id" id="sessionId">---</span>
+    </div>
+    <div class="clock" id="clock">00:00:00</div>
+  </div>
+</header>
+
+<!-- ── ALERT BANNER ── -->
+<div class="alert-banner" id="alertBanner">
+  <div class="alert-icon">⚠</div>
+  <div class="alert-text" id="alertText">Alert triggered</div>
+  <button class="alert-dismiss" onclick="dismissAlert()">✕</button>
+</div>
+
+<!-- ── MAIN GRID ── -->
+<main class="main-grid">
+
+  <!-- COL 1: Video -->
+  <section class="panel video-panel">
+    <div class="panel-header">
+      <span class="panel-title">LIVE FEED</span>
+      <div class="panel-controls">
+        <button class="ctrl-btn" id="startBtn" onclick="startMonitoring()">▶ START</button>
+        <button class="ctrl-btn danger" id="stopBtn" onclick="stopMonitoring()" disabled>■ STOP</button>
+        <button class="ctrl-btn ghost" onclick="resetSession()">↺ RESET</button>
+      </div>
+    </div>
+    <div class="video-wrapper">
+      <video id="videoFeed" autoplay muted playsinline></video>
+      <img id="processedFeed" alt="" style="display:none;"/>
+      <div class="video-overlay" id="videoOverlay">
+        <div class="overlay-icon">📷</div>
+        <div>Click START to begin monitoring</div>
+      </div>
+      <div class="face-badge" id="faceBadge" style="display:none;">
+        <span id="faceIcon">👤</span>
+        <span id="faceLabel">--</span>
+      </div>
+      <div class="rec-indicator" id="recIndicator" style="display:none;">
+        <span class="rec-dot"></span> REC
+      </div>
+      <!-- Audio level mini-bar overlay on video -->
+      <div class="audio-overlay" id="audioOverlay" style="display:none;">
+        <span class="ao-icon" id="aoIcon">🎙️</span>
+        <div class="ao-bar-track">
+          <div class="ao-bar-fill" id="aoBarFill"></div>
+        </div>
+        <span class="ao-db" id="aoDb">--</span>
+      </div>
+    </div>
+    <div class="video-footer">
+      <div class="vf-stat">
+        <span class="vf-val" id="vfFaces">0</span>
+        <span class="vf-lbl">FACES</span>
+      </div>
+      <div class="vf-divider"></div>
+      <div class="vf-stat">
+        <span class="vf-val" id="vfFrames">0</span>
+        <span class="vf-lbl">FRAMES</span>
+      </div>
+      <div class="vf-divider"></div>
+      <div class="vf-stat">
+        <span class="vf-val" id="vfFPS">0</span>
+        <span class="vf-lbl">FPS</span>
+      </div>
+      <div class="vf-divider"></div>
+      <div class="vf-stat">
+        <span class="vf-val" id="vfVoices">0</span>
+        <span class="vf-lbl">VOICES</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- COL 2: Stats + Timeline -->
+  <section class="center-column">
+
+    <!-- Risk Score Arc -->
+    <div class="panel risk-panel">
+      <div class="panel-header">
+        <span class="panel-title">INTEGRITY SCORE</span>
+        <span class="risk-label" id="riskLabel">CLEAN</span>
+      </div>
+      <div class="risk-meter-wrap">
+        <svg class="risk-arc" viewBox="0 0 200 120">
+          <path class="arc-bg" d="M 20 110 A 80 80 0 0 1 180 110" stroke-width="14" fill="none"/>
+          <path class="arc-fill" id="arcFill" d="M 20 110 A 80 80 0 0 1 180 110"
+                stroke-width="14" fill="none"
+                stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+          <text x="100" y="95" class="arc-score" id="arcScore" text-anchor="middle">0</text>
+          <text x="100" y="112" class="arc-unit" text-anchor="middle">RISK SCORE</text>
+        </svg>
+      </div>
+      <div class="risk-bars">
+        <div class="risk-bar-item">
+          <span class="rb-label">🚫 No Face</span>
+          <div class="rb-track"><div class="rb-fill red"    id="rbNoFace" style="width:0%"></div></div>
+          <span class="rb-val" id="rbNoFaceVal">0</span>
+        </div>
+        <div class="risk-bar-item">
+          <span class="rb-label">👥 Multi-Face</span>
+          <div class="rb-track"><div class="rb-fill orange" id="rbMulti"  style="width:0%"></div></div>
+          <span class="rb-val" id="rbMultiVal">0</span>
+        </div>
+        <div class="risk-bar-item">
+          <span class="rb-label">📱 Phone</span>
+          <div class="rb-track"><div class="rb-fill purple" id="rbPhone"  style="width:0%"></div></div>
+          <span class="rb-val" id="rbPhoneVal">0</span>
+        </div>
+        <div class="risk-bar-item">
+          <span class="rb-label">📋 Copy-Paste</span>
+          <div class="rb-track"><div class="rb-fill blue"   id="rbCP"     style="width:0%"></div></div>
+          <span class="rb-val" id="rbCPVal">0</span>
+        </div>
+        <div class="risk-bar-item">
+          <span class="rb-label">🎙️ Audio</span>
+          <div class="rb-track"><div class="rb-fill teal"   id="rbAudio"  style="width:0%"></div></div>
+          <span class="rb-val" id="rbAudioVal">0</span>
+        </div>
+        <div class="risk-bar-item">
+          <span class="rb-label">🔀 Tab Switch</span>
+          <div class="rb-track"><div class="rb-fill yellow" id="rbTab"    style="width:0%"></div></div>
+          <span class="rb-val" id="rbTabVal">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card" id="scNoFace">
+        <div class="sc-icon">🙈</div>
+        <div class="sc-val" id="scNoFaceVal">0</div>
+        <div class="sc-label">No Face</div>
+      </div>
+      <div class="stat-card" id="scMulti">
+        <div class="sc-icon">👥</div>
+        <div class="sc-val" id="scMultiVal">0</div>
+        <div class="sc-label">Multi-Face</div>
+      </div>
+      <div class="stat-card" id="scPhone">
+        <div class="sc-icon">📱</div>
+        <div class="sc-val" id="scPhoneVal">0</div>
+        <div class="sc-label">Phone</div>
+      </div>
+      <div class="stat-card" id="scCP">
+        <div class="sc-icon">📋</div>
+        <div class="sc-val" id="scCPVal">0</div>
+        <div class="sc-label">Copy-Paste</div>
+      </div>
+      <div class="stat-card" id="scAudio">
+        <div class="sc-icon">🎙️</div>
+        <div class="sc-val" id="scAudioVal">0</div>
+        <div class="sc-label">Audio Alerts</div>
+      </div>
+      <div class="stat-card" id="scTab">
+        <div class="sc-icon">🔀</div>
+        <div class="sc-val" id="scTabVal">0</div>
+        <div class="sc-label">Tab Switches</div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="panel timeline-panel">
+      <div class="panel-header">
+        <span class="panel-title">ACTIVITY TIMELINE</span>
+        <span class="tl-legend">
+          <span class="tl-dot red"></span>Face
+          <span class="tl-dot purple"></span>Phone
+          <span class="tl-dot blue"></span>CP
+          <span class="tl-dot teal"></span>Audio
+          <span class="tl-dot yellow"></span>Tab
+        </span>
+      </div>
+      <canvas id="timelineChart" height="80"></canvas>
+    </div>
+
+  </section>
+
+  <!-- COL 3: Audio Monitor + Violation Log -->
+  <section class="right-column">
+
+    <!-- Audio Monitor Panel -->
+    <div class="panel audio-panel">
+      <div class="panel-header">
+        <span class="panel-title">🎙️ AUDIO MONITOR</span>
+        <span class="audio-status-pill" id="audioStatusPill">OFF</span>
+      </div>
+
+      <!-- Waveform visualiser -->
+      <div class="waveform-wrap">
+        <canvas id="waveformCanvas" height="60"></canvas>
+        <div class="waveform-overlay" id="waveformOverlay">
+          <span>Enable microphone to monitor audio</span>
+        </div>
+      </div>
+
+      <!-- Volume meter -->
+      <div class="vol-meter-row">
+        <span class="vol-label">VOLUME</span>
+        <div class="vol-track">
+          <div class="vol-fill" id="volFill"></div>
+          <div class="vol-marker" style="left:40%"></div><!-- -25 dB safe zone -->
+          <div class="vol-marker danger" style="left:75%"></div><!-- -10 dB loud -->
+        </div>
+        <span class="vol-db" id="volDb">-- dB</span>
+      </div>
+
+      <!-- Voice count indicator -->
+      <div class="voice-row">
+        <span class="voice-label">VOICES DETECTED</span>
+        <div class="voice-dots" id="voiceDots">
+          <span class="vd" id="vd1"></span>
+          <span class="vd" id="vd2"></span>
+          <span class="vd" id="vd3"></span>
+        </div>
+        <span class="voice-count" id="voiceCount">--</span>
+      </div>
+
+      <!-- Audio stats -->
+      <div class="audio-stats-row">
+        <div class="ast">
+          <span class="ast-val" id="astAlerts">0</span>
+          <span class="ast-lbl">ALERTS</span>
+        </div>
+        <div class="ast">
+          <span class="ast-val" id="astPeak">--</span>
+          <span class="ast-lbl">PEAK dB</span>
+        </div>
+        <div class="ast">
+          <span class="ast-val" id="astSamples">0</span>
+          <span class="ast-lbl">SAMPLES</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Copy-Paste Monitor Panel -->
+    <div class="panel cp-panel">
+      <div class="panel-header">
+        <span class="panel-title">📋 COPY-PASTE MONITOR</span>
+        <span class="cp-status-pill" id="cpStatusPill">ACTIVE</span>
+      </div>
+      <div class="cp-body">
+        <div class="cp-event-row" id="cpCopyRow">
+          <span class="cp-ev-icon">📄</span>
+          <div class="cp-ev-info">
+            <div class="cp-ev-label">COPY events</div>
+            <div class="cp-ev-sub">Text copied from window</div>
+          </div>
+          <span class="cp-ev-count" id="cpCopyCount">0</span>
+        </div>
+        <div class="cp-event-row highlight" id="cpPasteRow">
+          <span class="cp-ev-icon">📋</span>
+          <div class="cp-ev-info">
+            <div class="cp-ev-label">PASTE events</div>
+            <div class="cp-ev-sub">External content pasted</div>
+          </div>
+          <span class="cp-ev-count" id="cpPasteCount">0</span>
+        </div>
+        <div class="cp-event-row" id="cpCutRow">
+          <span class="cp-ev-icon">✂️</span>
+          <div class="cp-ev-info">
+            <div class="cp-ev-label">CUT events</div>
+            <div class="cp-ev-sub">Text cut from window</div>
+          </div>
+          <span class="cp-ev-count" id="cpCutCount">0</span>
+        </div>
+      </div>
+      <!-- Hidden input to capture keyboard events -->
+      <div style="padding:8px 14px;">
+        <div class="cp-hint">
+          🔒 All keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+X) are monitored globally
+        </div>
+      </div>
+    </div>
+
+    <!-- Violation Log -->
+    <div class="panel log-panel">
+      <div class="panel-header">
+        <span class="panel-title">VIOLATION LOG</span>
+        <span class="log-count" id="logCount">0 events</span>
+      </div>
+      <div class="log-scroll" id="violationLog">
+        <div class="log-empty">
+          <div class="log-empty-icon">🛡️</div>
+          <div>No violations detected</div>
+          <div class="log-empty-sub">Start monitoring to begin</div>
+        </div>
+      </div>
+      <div class="log-footer">
+        <button class="ctrl-btn ghost small" onclick="exportLog()">⬇ Export</button>
+        <button class="ctrl-btn ghost small" onclick="clearLog()">🗑 Clear</button>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-item">
+    <span class="fi-label">SESSION START</span>
+    <span class="fi-val" id="footerSessionStart">--:--:--</span>
+  </div>
+  <div class="footer-item">
+    <span class="fi-label">DURATION</span>
+    <span class="fi-val" id="footerDuration">00:00</span>
+  </div>
+  <div class="footer-item">
+    <span class="fi-label">PHONE AI</span>
+    <span class="fi-val" id="yoloStatus" style="color:var(--yellow)">⏳ LOADING</span>
+  </div>
+  <div class="footer-item">
+    <span class="fi-label">COPY-PASTE</span>
+    <span class="fi-val" style="color:var(--green)">✓ MONITORED</span>
+  </div>
+  <div class="footer-item">
+    <span class="fi-label">AUDIO</span>
+    <span class="fi-val" id="footerAudio" style="color:var(--text2)">● STANDBY</span>
+  </div>
+  <div class="footer-item">
+    <span class="fi-label">INTEGRITY</span>
+    <span class="fi-val" id="footerIntegrity" style="color:var(--green)">✓ SECURE</span>
+  </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
